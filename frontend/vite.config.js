@@ -8,6 +8,12 @@ export default defineConfig({
     react()
   ],
   server: {
-    port: 5173
+    host: '0.0.0.0',
+    port: 5000,
+    allowedHosts: true,
+    proxy: {
+      '/api': 'http://127.0.0.1:8000',
+      '/sanctum': 'http://127.0.0.1:8000',
+    },
   }
 })
