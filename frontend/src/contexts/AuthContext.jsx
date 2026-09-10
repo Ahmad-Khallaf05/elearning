@@ -11,15 +11,18 @@ export const AuthProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     const checkAuth = async () => {
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+            setIsLoading(false);
+            return;
+        }
         try {
-            const token = localStorage.getItem('auth_token');
-            if (token) {
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            }
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             
             const response = await axios.get('/api/user');
-            setUser(response.data);
-            setRole(response.data.role);
+            const currentUser = response.data?.user || response.data?.data || response.data;
+            setUser(currentUser);
+            setRole(currentUser?.role);
         } catch (error) {
             setUser(null);
             setRole(null);

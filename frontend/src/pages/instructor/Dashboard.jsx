@@ -1,81 +1,14 @@
-import React from 'react';
-import { Users, BookOpen, DollarSign, TrendingUp } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowRight, BookOpen, CheckCircle2, Clock3, PlusCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import axios from '../../services/axios';
+import { apiMessage, asArray, ErrorState, LoadingState } from '../../components/Shared';
 
-const StatCard = ({ title, value, icon: Icon, trend, colorClass }) => (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow duration-200">
-        <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
-            <div className={`p-2 rounded-lg ${colorClass}`}>
-                <Icon className="w-5 h-5" />
-            </div>
-        </div>
-        <div className="flex items-baseline space-x-2">
-            <span className="text-3xl font-bold text-gray-900">{value}</span>
-            {trend && (
-                <span className={`text-sm font-medium ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {trend >= 0 ? '+' : ''}{trend}%
-                </span>
-            )}
-        </div>
-    </div>
-);
-
-const Dashboard = () => {
-    // Mock data for the dashboard
-    const stats = [
-        {
-            title: 'Total Students',
-            value: '1,248',
-            icon: Users,
-            trend: 12.5,
-            colorClass: 'bg-blue-50 text-blue-600'
-        },
-        {
-            title: 'Active Courses',
-            value: '12',
-            icon: BookOpen,
-            trend: 0,
-            colorClass: 'bg-indigo-50 text-indigo-600'
-        },
-        {
-            title: 'Total Revenue',
-            value: '$14,230',
-            icon: DollarSign,
-            trend: 8.2,
-            colorClass: 'bg-emerald-50 text-emerald-600'
-        },
-        {
-            title: 'Enrollments This Month',
-            value: '342',
-            icon: TrendingUp,
-            trend: 24.1,
-            colorClass: 'bg-purple-50 text-purple-600'
-        }
-    ];
-
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-                    <p className="mt-1 text-sm text-gray-500">Welcome back! Here's what's happening with your courses.</p>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat, index) => (
-                    <StatCard key={index} {...stat} />
-                ))}
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
-                <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                    <p>Activity charts and recent student enrollments will appear here.</p>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export default Dashboard;
+export default function Dashboard() {
+  const [courses, setCourses] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  const load = async () => { setLoading(true); try { const response = await axios.get('/api/courses'); setCourses(asArray(response.data)); setError(''); } catch (err) { setError(apiMessage(err, 'We could not load your course studio.')); } finally { setLoading(false); } };
+  useEffect(() => { load(); }, []);
+  if (loading) return <LoadingState label="Loading your course studio..." />;
+  const published = courses.filter(course => ['approved', 'published'].includes(String(course.status || '').toLowerCase())).length;
+  return <div className="animate-rise" style={{ maxWidth: 1180, margin: '0 auto' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', gap: 15, flexWrap: 'wrap', marginBottom: 28 }}><div><div className="eyebrow">Instructor studio</div><h1 className="font-display" style={{ margin: '8px 0 7px', fontSize: 'clamp(2rem,4vw,3.2rem)', letterSpacing: '-.06em' }}>Make the work teachable.</h1><p className="muted">A clear view of the courses you are shaping.</p></div><Link to="/instructor/courses/create" className="btn btn-primary"><PlusCircle size={16} /> New course</Link></div>{error && <ErrorState message={error} onRetry={load} />}<div className="stat-grid"><div className="stat-card"><BookOpen size={19} style={{ color: 'var(--teal)' }} /><div className="muted" style={{ fontSize: '.8rem', marginTop: 12 }}>Total courses</div><strong className="font-display" style={{ fontSize: '1.8rem' }}>{courses.length}</strong></div><div className="stat-card"><CheckCircle2 size={19} style={{ color: 'var(--teal)' }} /><div className="muted" style={{ fontSize: '.8rem', marginTop: 12 }}>Published</div><strong className="font-display" style={{ fontSize: '1.8rem' }}>{published}</strong></div><div className="stat-card"><Clock3 size={19} style={{ color: 'var(--sun)' }} /><div className="muted" style={{ fontSize: '.8rem', marginTop: 12 }}>In review</div><strong className="font-display" style={{ fontSize: '1.8rem' }}>{courses.filter(course => String(course.status || '').toLowerCase() === 'pending').length}</strong></div><div className="stat-card"><div style={{ color: 'var(--coral)', fontWeight: 800 }}>—</div><div className="muted" style={{ fontSize: '.8rem', marginTop: 12 }}>Learner analytics</div><strong style={{ display: 'block', marginTop: 8, fontSize: '.9rem' }}>Not connected</strong></div></div><div className="surface" style={{ padding: 23, marginTop: 19 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}><h2 className="font-display" style={{ margin: 0 }}>Recent course work</h2><Link to="/instructor/courses" style={{ color: 'var(--teal)', fontWeight: 700, fontSize: '.85rem' }}>Manage all <ArrowRight size={14} style={{ verticalAlign: 'middle' }} /></Link></div>{courses.length === 0 ? <p className="muted" style={{ margin: '22px 0 0' }}>Create your first course to see it here.</p> : <div style={{ display: 'grid', gap: 10, marginTop: 17 }}>{courses.slice(0, 4).map(course => <div key={course.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '13px 0', borderTop: '1px solid var(--line)' }}><span style={{ fontWeight: 700 }}>{course.title || 'Untitled course'}</span><span className="eyebrow" style={{ letterSpacing: '.08em' }}>{course.status || 'draft'}</span></div>)}</div>}</div></div>;
+}

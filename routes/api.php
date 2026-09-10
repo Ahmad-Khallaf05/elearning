@@ -14,13 +14,15 @@ use App\Http\Middleware\IsAdmin;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+Route::get('/courses', [CourseController::class, 'index']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
-    Route::apiResource('courses', CourseController::class);
+    Route::apiResource('courses', CourseController::class)->except(['index']);
     
     // Nested Section & Lesson Routes
     Route::apiResource('courses.sections', SectionController::class)->shallow();

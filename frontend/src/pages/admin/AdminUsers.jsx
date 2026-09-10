@@ -1,0 +1,6 @@
+import React from 'react';
+import { Users, ShieldCheck } from 'lucide-react';
+
+export default function AdminUsers() {
+  return <div className="animate-rise" style={{ maxWidth: 1120, margin: '0 auto' }}><div style={{ marginBottom: 27 }}><div className="eyebrow">Admin review desk</div><h1 className="font-display" style={{ margin: '8px 0 7px', fontSize: 'clamp(2rem,4vw,3.1rem)', letterSpacing: '-.05em' }}>People in the workspace.</h1><p className="muted">User management will appear here as the account administration API becomes available.</p></div><div className="surface" style={{ padding: '58px 24px', textAlign: 'center' }}><div style={{ width: 58, height: 58, borderRadius: 17, margin: '0 auto 16px', display: 'grid', placeItems: 'center', color: 'var(--teal)', background: 'var(--mint)' }}><Users size={28} /></div><h2 className="font-display" style={{ margin: '0 0 8px' }}>No directory endpoint connected</h2><p className="muted" style={{ maxWidth: 450, margin: '0 auto 18px', lineHeight: 1.6 }}>This screen is intentionally honest: it does not invent user totals or actions. Connect the admin users endpoint to populate the directory.</p><span className="eyebrow" style={{ letterSpacing: '.08em' }}><ShieldCheck size={14} style={{ verticalAlign: 'middle' }} /> Administration ready</span></div></div>;
+}

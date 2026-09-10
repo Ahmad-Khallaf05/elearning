@@ -23,6 +23,7 @@ class CourseResource extends JsonResource
             ]),
             'title' => $this->title,
             'description' => $this->description,
+            'thumbnail_url' => $this->thumbnail_url,
             'price' => (float) $this->price,
             'approval_status' => $this->approval_status,
             'sections' => SectionResource::collection($this->whenLoaded('sections')),

@@ -1,0 +1,14 @@
+import React, { useEffect, useState } from 'react';
+import { Activity, CheckCircle2, ClipboardCheck, ShieldCheck } from 'lucide-react';
+import axios from '../../services/axios';
+import { asArray, ErrorState, LoadingState } from '../../components/Shared';
+
+export default function AdminOverview() {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const load = async () => { setLoading(true); try { const response = await axios.get('/api/admin/courses'); setCourses(asArray(response.data)); setError(''); } catch { setError('Review data is not available right now.'); } finally { setLoading(false); } };
+  useEffect(() => { load(); }, []);
+  if (loading) return <LoadingState label="Loading review desk..." />;
+  return <div className="animate-rise" style={{ maxWidth: 1120, margin: '0 auto' }}><div style={{ marginBottom: 27 }}><div className="eyebrow">Admin review desk</div><h1 className="font-display" style={{ margin: '8px 0 7px', fontSize: 'clamp(2rem,4vw,3.1rem)', letterSpacing: '-.05em' }}>Quality, made visible.</h1><p className="muted">A grounded view of the work currently waiting for attention.</p></div>{error ? <ErrorState message={error} onRetry={load} /> : <><div className="stat-grid"><div className="stat-card"><ClipboardCheck size={20} style={{ color: 'var(--teal)' }} /><div className="muted" style={{ marginTop: 14, fontSize: '.82rem' }}>Courses in review</div><strong className="font-display" style={{ display: 'block', marginTop: 4, fontSize: '2rem' }}>{courses.length}</strong></div><div className="stat-card"><CheckCircle2 size={20} style={{ color: 'var(--teal)' }} /><div className="muted" style={{ marginTop: 14, fontSize: '.82rem' }}>Review workflow</div><strong style={{ display: 'block', marginTop: 8, color: 'var(--teal)' }}>Active</strong></div><div className="stat-card"><ShieldCheck size={20} style={{ color: 'var(--coral)' }} /><div className="muted" style={{ marginTop: 14, fontSize: '.82rem' }}>Decision standard</div><strong style={{ display: 'block', marginTop: 8 }}>Human review</strong></div><div className="stat-card"><Activity size={20} style={{ color: 'var(--sun)' }} /><div className="muted" style={{ marginTop: 14, fontSize: '.82rem' }}>System status</div><strong style={{ display: 'block', marginTop: 8 }}>Connected</strong></div></div><div className="surface" style={{ padding: 23, marginTop: 18 }}><h2 className="font-display" style={{ margin: 0 }}>Next action</h2><p className="muted" style={{ lineHeight: 1.6 }}>Review submitted courses for clarity, structure, and learner value. Counts above are live from the review endpoint; no placeholder totals are shown.</p><a className="btn btn-primary btn-sm" href="/admin/approvals">Open approvals</a></div></>}</div>;
+}

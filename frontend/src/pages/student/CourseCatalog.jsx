@@ -1,126 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { BookOpen, Search, SlidersHorizontal, UserRound } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import axios from '../../services/axios';
-import { Search, BookOpen, User as UserIcon, Loader2 } from 'lucide-react';
+import { apiMessage, asArray, EmptyState, ErrorState, formatMoney, LoadingState } from '../../components/Shared';
 
-const CourseCatalog = () => {
-    const [courses, setCourses] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
-
-    useEffect(() => {
-        fetchCourses();
-    }, []);
-
-    const fetchCourses = async () => {
-        try {
-            // Assuming GET /api/courses returns all public courses
-            const response = await axios.get('/api/courses');
-            setCourses(response.data.data || response.data);
-            setError('');
-        } catch (err) {
-            console.error(err);
-            setError('Failed to load courses. Please try again later.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const filteredCourses = courses.filter(course => 
-        course.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-6 max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Browse Courses</h1>
-                    <p className="mt-1 text-sm text-gray-500">Discover new skills and elevate your career.</p>
-                </div>
-                
-                <div className="relative w-full md:w-72">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Search courses..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
-                    />
-                </div>
-            </div>
-
-            {error && (
-                <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-100">
-                    {error}
-                </div>
-            )}
-
-            {!isLoading && filteredCourses.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-200">
-                    <BookOpen className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900">No courses found</h3>
-                    <p className="text-gray-500">Try adjusting your search query.</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredCourses.map((course) => (
-                        <div key={course.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col group">
-                            <div className="aspect-video bg-gray-100 relative overflow-hidden flex-shrink-0">
-                                {course.thumbnail_url ? (
-                                    <img 
-                                        src={course.thumbnail_url} 
-                                        alt={course.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50">
-                                        <BookOpen className="w-12 h-12 text-indigo-200" />
-                                    </div>
-                                )}
-                                <div className="absolute top-3 right-3">
-                                    <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-white/95 text-gray-900 shadow-sm backdrop-blur-sm">
-                                        ${parseFloat(course.price).toFixed(2)}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div className="p-5 flex-1 flex flex-col">
-                                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
-                                    {course.title}
-                                </h3>
-                                
-                                <div className="flex items-center text-sm text-gray-500 mb-4">
-                                    <UserIcon className="w-4 h-4 mr-1.5" />
-                                    <span className="truncate">{course.instructor?.name || 'Instructor'}</span>
-                                </div>
-                                
-                                <div className="mt-auto pt-4 border-t border-gray-50">
-                                    <Link 
-                                        to={`/student/courses/${course.id}`}
-                                        className="w-full flex items-center justify-center px-4 py-2 bg-indigo-50 text-indigo-700 font-medium rounded-lg hover:bg-indigo-100 transition-colors"
-                                    >
-                                        View Details
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
-
-export default CourseCatalog;
+export default function CourseCatalog() {
+  const location = useLocation(); const detailPath = location.pathname.startsWith('/catalog') ? '/courses' : '/student/courses'; const [courses, setCourses] = useState([]); const [query, setQuery] = useState(''); const [filter, setFilter] = useState('all'); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  const load = async () => { setLoading(true); try { const response = await axios.get('/api/courses'); setCourses(asArray(response.data)); setError(''); } catch (err) { setError(apiMessage(err, 'The catalog could not be loaded.')); } finally { setLoading(false); } };
+  useEffect(() => { load(); }, []);
+  const filtered = useMemo(() => courses.filter(course => { const text = `${course.title || ''} ${course.description || ''} ${course.instructor?.name || ''}`.toLowerCase(); const matchesQuery = text.includes(query.toLowerCase()); const price = Number(course.price || 0); return matchesQuery && (filter === 'all' || (filter === 'free' ? price === 0 : price > 0)); }), [courses, query, filter]);
+  if (loading) return <LoadingState label="Finding courses..." />;
+  return <div className="animate-rise" style={{ maxWidth: 1180, margin: '0 auto' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', gap: 15, flexWrap: 'wrap', marginBottom: 23 }}><div><div className="eyebrow">Course catalog</div><h1 className="font-display" style={{ margin: '8px 0 7px', fontSize: 'clamp(2rem,4vw,3.2rem)', letterSpacing: '-.06em' }}>Choose something useful.</h1><p className="muted">Practical courses, clear outcomes, room to practice.</p></div><div className="muted" style={{ fontSize: '.84rem' }}>{courses.length} published {courses.length === 1 ? 'course' : 'courses'}</div></div>{error && <div style={{ marginBottom: 18 }}><ErrorState message={error} onRetry={load} /></div>}<div className="surface" style={{ display: 'flex', gap: 10, padding: 12, marginBottom: 20, flexWrap: 'wrap' }}><div style={{ position: 'relative', flex: '1 1 240px' }}><Search size={17} className="muted" style={{ position: 'absolute', left: 12, top: 12 }} /><input className="input" style={{ paddingLeft: 38 }} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by title, topic, or instructor" aria-label="Search courses" /></div><div style={{ position: 'relative', flex: '0 1 170px' }}><SlidersHorizontal size={16} className="muted" style={{ position: 'absolute', left: 12, top: 13 }} /><select className="input" style={{ paddingLeft: 35 }} value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter courses"><option value="all">All prices</option><option value="free">Free courses</option><option value="paid">Paid courses</option></select></div></div>{filtered.length === 0 ? <EmptyState title="No courses match that search." description="Try a broader phrase or clear the price filter." action={<button className="btn btn-secondary btn-sm" type="button" onClick={() => { setQuery(''); setFilter('all'); }}>Clear filters</button>} /> : <div className="course-grid">{filtered.map(course => <Link className="course-card" to={`${detailPath}/${course.id}`} key={course.id}><div className="course-cover">{course.thumbnail_url ? <img src={course.thumbnail_url} alt="" /> : <div className="cover-fallback"><BookOpen size={36} /></div>}<span style={{ position: 'absolute', top: 12, right: 12, padding: '5px 8px', borderRadius: 8, color: 'var(--navy)', background: '#fff', fontSize: '.78rem', fontWeight: 800 }}>{formatMoney(course.price)}</span></div><div className="course-body"><h2 className="course-title">{course.title || 'Untitled course'}</h2><p className="muted" style={{ margin: '10px 0 15px', lineHeight: 1.5, fontSize: '.86rem' }}>{course.description || 'A practical course from the CoursePilot community.'}</p><div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 'auto', color: 'var(--muted)', fontSize: '.8rem' }}><UserRound size={15} /> {course.instructor?.name || 'CoursePilot instructor'}</div></div></Link>)}</div>}</div>;
+}

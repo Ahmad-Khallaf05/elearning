@@ -18,6 +18,9 @@ class CheckoutController extends Controller
         ]);
 
         $user = $request->user();
+        if (!$user || $user->role !== 'student') {
+            return response()->json(['message' => 'Only students can check out courses.'], 403);
+        }
         $course = Course::findOrFail($request->course_id);
 
         if ($course->approval_status !== 'approved') {

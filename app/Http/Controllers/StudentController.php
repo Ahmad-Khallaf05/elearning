@@ -13,7 +13,10 @@ class StudentController extends Controller
     {
         $user = $request->user();
         
-        $enrollments = Enrollment::with(['course.sections.lessons'])
+        $enrollments = Enrollment::with([
+            'course.sections' => fn ($query) => $query->orderBy('order'),
+            'course.sections.lessons' => fn ($query) => $query->orderBy('order'),
+        ])
             ->where('student_id', $user->id)
             ->get();
 
@@ -72,8 +75,16 @@ class StudentController extends Controller
         }
 
         // Toggle completion
-        $user->completedLessons()->toggle($lesson->id);
+        $completed = $user->completedLessons()->where('lessons.id', $lesson->id)->exists();
+        if ($completed) {
+            $user->completedLessons()->detach($lesson->id);
+        } else {
+            $user->completedLessons()->attach($lesson->id);
+        }
 
-        return response()->json(['message' => 'Lesson completion status updated.']);
+        return response()->json([
+            'message' => 'Lesson completion status updated.',
+            'completed' => !$completed,
+        ]);
     }
 }

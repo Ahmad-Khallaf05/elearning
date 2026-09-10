@@ -13,13 +13,13 @@ class CourseController extends Controller
 
     public function index(Request $request)
     {
-        $user = $request->user();
-        
         $query = Course::with('instructor');
+        $user = $request->user();
 
-        if ($user->role === 'student') {
+        if (!$user) {
             $query->where('approval_status', 'approved');
-
+        } elseif ($user->role === 'student') {
+            $query->where('approval_status', 'approved');
         } elseif ($user->role === 'instructor') {
             $query->where('instructor_id', $user->id);
         }
@@ -39,13 +39,15 @@ class CourseController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'price' => 'nullable|numeric|min:0',
+            'thumbnail_url' => 'nullable|url|max:2048',
+            'price' => 'nullable|numeric|min:0|max:99999999.99',
         ]);
 
         $course = Course::create([
             'instructor_id' => $user->id,
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
+            'thumbnail_url' => $validated['thumbnail_url'] ?? null,
             'price' => $validated['price'] ?? 0,
             'approval_status' => 'pending', // Automatically pending for instructors
         ]);
@@ -56,14 +58,22 @@ class CourseController extends Controller
     public function show(Request $request, Course $course)
     {
         $user = $request->user();
+        $canViewContent = $user && (
+            $user->role === 'admin' ||
+            $course->instructor_id === $user->id ||
+            ($user->role === 'student' && $course->enrollments()
+                ->where('student_id', $user->id)->exists())
+        );
 
-        if ($course->approval_status !== 'approved') {
-            if ($user->role === 'student' || ($user->role === 'instructor' && $course->instructor_id !== $user->id)) {
-                return response()->json(['message' => 'Course not found or unauthorized.'], 404);
-            }
+        if ($course->approval_status !== 'approved' && (!$user || !$canViewContent)) {
+            return response()->json(['message' => 'Course not found or unauthorized.'], 404);
         }
 
-        $course->load('sections.lessons', 'instructor');
+        $course->load('instructor');
+        if ($canViewContent) {
+            $course->load(['sections' => fn ($query) => $query->orderBy('order'),
+                'sections.lessons' => fn ($query) => $query->orderBy('order')]);
+        }
 
         return new CourseResource($course);
     }
@@ -79,7 +89,8 @@ class CourseController extends Controller
         $validated = $request->validate([
             'title' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'price' => 'sometimes|numeric|min:0',
+            'thumbnail_url' => 'sometimes|nullable|url|max:2048',
+            'price' => 'sometimes|numeric|min:0|max:99999999.99',
             'approval_status' => 'sometimes|in:pending,approved,rejected',
         ]);
 
@@ -88,6 +99,11 @@ class CourseController extends Controller
             unset($validated['approval_status']);
         }
 
+        $materialFields = ['title', 'description', 'thumbnail_url', 'price'];
+        if ($user->role === 'instructor' && $course->approval_status === 'approved'
+            && count(array_intersect(array_keys($validated), $materialFields)) > 0) {
+            $validated['approval_status'] = 'pending';
+        }
         $course->update($validated);
 
         return new CourseResource($course);

@@ -1,88 +1,23 @@
 import React, { useState } from 'react';
+import { ArrowLeft, ArrowRight, KeyRound, ShieldCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { apiMessage, SubmitButton } from '../components/Shared';
 
-const Login = () => {
-    const { login } = useAuth();
-    const navigate = useNavigate();
-    const [credentials, setCredentials] = useState({ email: '', password: '' });
-    const [errors, setErrors] = useState({});
-    const [loading, setLoading] = useState(false);
+const destination = (role) => role === 'student' ? '/student/dashboard' : role === 'instructor' ? '/instructor/dashboard' : role === 'admin' ? '/admin/overview' : '/';
 
-    const handleChange = (e) => setCredentials({ ...credentials, [e.target.name]: e.target.value });
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setErrors({});
-        setLoading(true);
-
-        try {
-            const data = await login(credentials);
-            if (data.user.role === 'student') navigate('/student/dashboard');
-            else if (data.user.role === 'instructor') navigate('/instructor/dashboard');
-            else if (data.user.role === 'admin') navigate('/admin/approvals');
-            else navigate('/');
-        } catch (error) {
-            if (error.response && error.response.status === 422) {
-                setErrors(error.response.data.errors || { email: [error.response.data.message] });
-            } else {
-                setErrors({ email: ['An unexpected error occurred.'] });
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Welcome back</h1>
-                    <p className="text-slate-500 mt-2">Sign in to your account to continue</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-                        <input 
-                            type="email" 
-                            name="email" 
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-slate-50 focus:bg-white"
-                            placeholder="you@example.com"
-                            required 
-                        />
-                        {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email[0]}</p>}
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-                        <input 
-                            type="password" 
-                            name="password" 
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-slate-50 focus:bg-white"
-                            placeholder="••••••••"
-                            required 
-                        />
-                        {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password[0]}</p>}
-                    </div>
-
-                    <button 
-                        type="submit" 
-                        disabled={loading}
-                        className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md shadow-indigo-200 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                        {loading ? 'Signing in...' : 'Sign in'}
-                    </button>
-                </form>
-
-                <p className="mt-6 text-center text-slate-600">
-                    Don't have an account? <Link to="/register" className="text-indigo-600 hover:text-indigo-500 font-semibold transition-colors">Sign up</Link>
-                </p>
-            </div>
-        </div>
-    );
-};
-
-export default Login;
+export default function Login() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const submit = async (event) => {
+    event.preventDefault(); setLoading(true); setError(''); setFieldErrors({});
+    try { const result = await login(form); navigate(destination(result.user?.role)); }
+    catch (err) { setError(apiMessage(err, 'We could not sign you in. Check your details and try again.')); setFieldErrors(err.response?.data?.errors || {}); }
+    finally { setLoading(false); }
+  };
+  return <div className="auth-page"><aside className="auth-aside"><Link to="/" className="role-brand" style={{ padding: 0 }}><span className="brand-mark">C</span> CoursePilot</Link><div style={{ position: 'relative', zIndex: 1, maxWidth: 440, marginTop: 'clamp(52px, 14vh, 145px)' }}><div className="eyebrow" style={{ color: 'var(--sun)' }}>Back to your practice</div><h1 className="font-display" style={{ fontSize: 'clamp(2.3rem,5vw,4.5rem)', lineHeight: 1, letterSpacing: '-.07em', margin: '13px 0 18px' }}>Pick up where your curiosity left off.</h1><p style={{ color: '#b9ccca', lineHeight: 1.65 }}>Your courses, live sessions, and next small win are waiting in one focused place.</p></div><div style={{ position: 'absolute', zIndex: 1, left: 'clamp(30px,7vw,90px)', bottom: 35, color: '#9db6b6', fontSize: '.83rem' }}><ShieldCheck size={15} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Your learning data stays yours</div></aside><main className="auth-form-side"><div className="auth-card animate-rise"><Link to="/" className="muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '.84rem', marginBottom: 34 }}><ArrowLeft size={15} /> CoursePilot home</Link><div className="eyebrow">Welcome back</div><h2 className="font-display" style={{ fontSize: '2.25rem', letterSpacing: '-.05em', margin: '8px 0 8px' }}>Sign in to learn.</h2><p className="muted" style={{ marginBottom: 25 }}>Use the email connected to your CoursePilot account.</p>{error && <div className="notice notice-error" role="alert" style={{ marginBottom: 16 }}>{error}</div>}<form onSubmit={submit} style={{ display: 'grid', gap: 17 }}><div><label htmlFor="email" className="label">Email address</label><input id="email" className="input" type="email" autoComplete="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="you@example.com" />{fieldErrors.email && <div className="error-text">{fieldErrors.email[0]}</div>}</div><div><label htmlFor="password" className="label">Password</label><div style={{ position: 'relative' }}><KeyRound size={17} className="muted" style={{ position: 'absolute', left: 13, top: 13 }} /><input id="password" className="input" style={{ paddingLeft: 40 }} type="password" autoComplete="current-password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Your password" /></div>{fieldErrors.password && <div className="error-text">{fieldErrors.password[0]}</div>}</div><SubmitButton loading={loading} type="submit">Sign in <ArrowRight size={17} /></SubmitButton></form><p className="muted" style={{ marginTop: 25, textAlign: 'center', fontSize: '.9rem' }}>New to CoursePilot? <Link to="/register" style={{ color: 'var(--teal)', fontWeight: 700 }}>Create an account</Link></p></div></main></div>;
+}

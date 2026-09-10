@@ -1,133 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { BookOpen, Edit3, List, Plus, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from '../../services/axios';
-import { BookOpen, Plus, Edit, Trash2, Clock, List } from 'lucide-react';
+import { apiMessage, asArray, EmptyState, ErrorState, formatMoney, LoadingState, SubmitButton, Toast } from '../../components/Shared';
 
-const CoursesList = () => {
-    const [courses, setCourses] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
-
-    useEffect(() => {
-        fetchCourses();
-    }, []);
-
-    const fetchCourses = async () => {
-        try {
-            const response = await axios.get('/api/courses');
-            // Assuming the API returns either an array of courses directly or paginated data
-            setCourses(response.data.data || response.data);
-            setError('');
-        } catch (err) {
-            console.error('Failed to fetch courses:', err);
-            setError('Failed to load courses. Please try again later.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">My Courses</h1>
-                    <p className="mt-1 text-sm text-gray-500">Manage your course catalog and content.</p>
-                </div>
-                <Link
-                    to="/instructor/courses/create"
-                    className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm"
-                >
-                    <Plus className="w-5 h-5 mr-2 -ml-1" />
-                    Create New Course
-                </Link>
-            </div>
-
-            {error && (
-                <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-100">
-                    {error}
-                </div>
-            )}
-
-            {courses.length === 0 && !error ? (
-                <div className="bg-white rounded-xl border border-gray-200 border-dashed p-12 text-center">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 mb-4">
-                        <BookOpen className="h-6 w-6 text-indigo-600" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No courses yet</h3>
-                    <p className="text-gray-500 mb-6">Get started by creating your first course and sharing your knowledge.</p>
-                    <Link
-                        to="/instructor/courses/create"
-                        className="inline-flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors font-medium"
-                    >
-                        <Plus className="w-5 h-5 mr-2" />
-                        Create Course
-                    </Link>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {courses.map((course) => (
-                        <div key={course.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group flex flex-col">
-                            <div className="aspect-video bg-gray-100 relative overflow-hidden flex-shrink-0">
-                                {course.thumbnail_url ? (
-                                    <img 
-                                        src={course.thumbnail_url} 
-                                        alt={course.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50">
-                                        <BookOpen className="w-12 h-12 text-indigo-200" />
-                                    </div>
-                                )}
-                                <div className="absolute top-3 right-3">
-                                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full bg-white/90 backdrop-blur-sm text-gray-700 shadow-sm`}>
-                                        ${parseFloat(course.price).toFixed(2)}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div className="p-5 flex-1 flex flex-col">
-                                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">{course.title}</h3>
-                                <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">
-                                    {course.description || 'No description provided.'}
-                                </p>
-                                
-                                <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
-                                    <div className="flex items-center text-sm text-gray-500">
-                                        <Clock className="w-4 h-4 mr-1.5" />
-                                        <span>Draft</span> {/* Mock status for now */}
-                                    </div>
-                                    <div className="flex space-x-2">
-                                        <Link 
-                                            to={`/instructor/courses/${course.id}/syllabus`}
-                                            title="Manage Syllabus"
-                                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                        >
-                                            <List className="w-4 h-4" />
-                                        </Link>
-                                        <button className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors">
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
-
-export default CoursesList;
+export default function CoursesList() {
+  const [courses, setCourses] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [notice, setNotice] = useState(''); const [editing, setEditing] = useState(null); const [saving, setSaving] = useState(false); const [deleting, setDeleting] = useState(null);
+  const load = async () => { setLoading(true); try { const response = await axios.get('/api/courses'); setCourses(asArray(response.data)); setError(''); } catch (err) { setError(apiMessage(err, 'We could not load your courses.')); } finally { setLoading(false); } };
+  useEffect(() => { load(); }, []);
+  const updateCourse = async event => { event.preventDefault(); setSaving(true); try { const response = await axios.put(`/api/courses/${editing.id}`, { title: editing.title, description: editing.description, price: editing.price }); const updated = response.data?.data || response.data; setCourses(prev => prev.map(course => course.id === editing.id ? { ...course, ...updated } : course)); setNotice('Course details saved.'); setEditing(null); } catch (err) { setError(apiMessage(err, 'We could not save those changes.')); } finally { setSaving(false); } };
+  const deleteCourse = async course => { if (!window.confirm(`Delete “${course.title || 'this course'}”? This cannot be undone.`)) return; setDeleting(course.id); try { await axios.delete(`/api/courses/${course.id}`); setCourses(prev => prev.filter(item => item.id !== course.id)); setNotice('Course deleted.'); } catch (err) { setError(apiMessage(err, 'We could not delete this course.')); } finally { setDeleting(null); } };
+  if (loading) return <LoadingState label="Loading your courses..." />;
+  return <div className="animate-rise" style={{ maxWidth: 1180, margin: '0 auto' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', gap: 15, flexWrap: 'wrap', marginBottom: 23 }}><div><div className="eyebrow">Instructor studio</div><h1 className="font-display" style={{ margin: '8px 0 7px', fontSize: 'clamp(2rem,4vw,3.2rem)', letterSpacing: '-.06em' }}>Your courses.</h1><p className="muted">Shape the curriculum, then send it into review.</p></div><Link to="/instructor/courses/create" className="btn btn-primary"><Plus size={16} /> Create course</Link></div><Toast message={notice} />{error && <div style={{ marginTop: 15 }}><ErrorState message={error} onRetry={load} /></div>}{courses.length === 0 ? <div style={{ marginTop: 18 }}><EmptyState title="Your course shelf is empty." description="Start with a clear promise to your learners, then build the lessons around it." action={<Link to="/instructor/courses/create" className="btn btn-primary"><Plus size={16} /> Create your first course</Link>} /></div> : <div className="course-grid" style={{ marginTop: 18 }}>{courses.map(course => <article className="course-card" key={course.id}><div className="course-cover">{course.thumbnail_url ? <img src={course.thumbnail_url} alt="" /> : <div className="cover-fallback"><BookOpen size={36} /></div>}<span style={{ position: 'absolute', top: 12, right: 12, padding: '5px 8px', borderRadius: 8, color: 'var(--navy)', background: '#fff', fontSize: '.78rem', fontWeight: 800 }}>{formatMoney(course.price)}</span></div><div className="course-body"><h2 className="course-title">{course.title || 'Untitled course'}</h2><p className="muted" style={{ flex: 1, margin: '9px 0 15px', fontSize: '.85rem', lineHeight: 1.5 }}>{course.description || 'No description yet.'}</p><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 13, borderTop: '1px solid var(--line)' }}><span className="eyebrow" style={{ letterSpacing: '.07em' }}>{course.status || 'draft'}</span><div style={{ display: 'flex', gap: 3 }}><Link className="btn btn-secondary btn-sm" title="Manage syllabus" to={`/instructor/courses/${course.id}/syllabus`}><List size={15} /></Link><button type="button" className="btn btn-secondary btn-sm" title="Edit course" onClick={() => setEditing({ id: course.id, title: course.title || '', description: course.description || '', price: course.price || '' })}><Edit3 size={15} /></button><button type="button" className="btn btn-danger btn-sm" title="Delete course" disabled={deleting === course.id} onClick={() => deleteCourse(course)}><Trash2 size={15} /></button></div></div></div></article>)}</div>}{editing && <div role="dialog" aria-modal="true" style={{ position: 'fixed', zIndex: 60, inset: 0, display: 'grid', placeItems: 'center', padding: 18, background: 'rgba(23,48,66,.48)' }}><form onSubmit={updateCourse} className="surface" style={{ width: 'min(520px, 100%)', padding: 24 }}><div className="eyebrow">Edit course</div><h2 className="font-display" style={{ margin: '8px 0 20px' }}>Make the details clearer.</h2><label className="label" htmlFor="edit-title">Title</label><input id="edit-title" className="input" required value={editing.title} onChange={e => setEditing({ ...editing, title: e.target.value })} /><label className="label" style={{ marginTop: 14 }} htmlFor="edit-description">Description</label><textarea id="edit-description" className="input" rows="5" required value={editing.description} onChange={e => setEditing({ ...editing, description: e.target.value })} /><label className="label" style={{ marginTop: 14 }} htmlFor="edit-price">Price</label><input id="edit-price" className="input" type="number" min="0" step="0.01" required value={editing.price} onChange={e => setEditing({ ...editing, price: e.target.value })} /><div style={{ display: 'flex', justifyContent: 'end', gap: 9, marginTop: 20 }}><button type="button" className="btn btn-secondary" onClick={() => setEditing(null)}>Cancel</button><SubmitButton loading={saving} type="submit">Save changes</SubmitButton></div></form></div>}</div>;
+}

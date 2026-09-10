@@ -27,7 +27,7 @@ const Syllabus = () => {
     const [sectionForm, setSectionForm] = useState({ title: '', order: 1 });
     const [lessonForm, setLessonForm] = useState({
         title: '',
-        type: 'VOD', // VOD or Live
+        type: 'vod',
         video_url: '',
         scheduled_time: '',
         live_session_id: '',
@@ -53,8 +53,7 @@ const Syllabus = () => {
                 courseData.sections.forEach(sec => initialExpanded[sec.id] = true);
                 setExpandedSections(initialExpanded);
             }
-        } catch (err) {
-            console.error(err);
+        } catch {
             setError('Failed to load course syllabus.');
         } finally {
             setIsLoading(false);
@@ -106,8 +105,8 @@ const Syllabus = () => {
                 title: lessonForm.title,
                 type: lessonForm.type,
                 order: lessonForm.order,
-                vod_url: lessonForm.type === 'VOD' ? lessonForm.video_url : null,
-                live_metadata: lessonForm.type === 'Live' ? {
+                vod_url: lessonForm.type === 'vod' ? lessonForm.video_url : null,
+                live_metadata: lessonForm.type === 'live' ? {
                     scheduled_time: lessonForm.scheduled_time,
                     live_session_id: lessonForm.live_session_id
                 } : null
@@ -226,7 +225,7 @@ const Syllabus = () => {
                                                 {section.lessons.map((lesson, lIndex) => (
                                                     <li key={lesson.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:border-indigo-100 hover:bg-indigo-50/30 transition-colors">
                                                         <div className="flex items-center">
-                                                            {lesson.type === 'Live' ? (
+                                                            {String(lesson.type).toLowerCase() === 'live' ? (
                                                                 <Calendar className="w-4 h-4 mr-3 text-emerald-500" />
                                                             ) : (
                                                                 <PlayCircle className="w-4 h-4 mr-3 text-indigo-500" />
@@ -334,12 +333,12 @@ const Syllabus = () => {
                                     onChange={(e) => setLessonForm({...lessonForm, type: e.target.value})}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
                                 >
-                                    <option value="VOD">Video on Demand (VOD)</option>
-                                    <option value="Live">Live Session</option>
+                                     <option value="vod">Video on Demand (VOD)</option>
+                                     <option value="live">Live Session</option>
                                 </select>
                             </div>
 
-                            {lessonForm.type === 'VOD' && (
+                             {lessonForm.type === 'vod' && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
                                         <Video className="w-4 h-4 mr-1 text-gray-400" /> Video URL
@@ -355,7 +354,7 @@ const Syllabus = () => {
                                 </div>
                             )}
 
-                            {lessonForm.type === 'Live' && (
+                             {lessonForm.type === 'live' && (
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
