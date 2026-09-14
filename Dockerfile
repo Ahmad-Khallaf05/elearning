@@ -26,7 +26,7 @@ RUN a2enmod rewrite
 # Update Apache DocumentRoot
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf ${APACHE_CONFDIR}/conf-available/*.conf
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -37,8 +37,8 @@ WORKDIR /var/www/html
 # Copy existing application directory contents
 COPY . /var/www/html
 
-# Install Composer dependencies
-RUN composer install --optimize-autoloader --no-dev
+# Install Composer dependencies (تم تعطيل تشغيل السكريبتات لتجنب فشل artisan أثناء البناء)
+RUN composer install --optimize-autoloader --no-dev --no-scripts
 
 # Install NPM dependencies and build assets
 RUN npm install && npm run build
@@ -47,3 +47,5 @@ RUN npm install && npm run build
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 80
+
+CMD ["apache2-foreground"]
