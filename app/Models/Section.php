@@ -11,8 +11,14 @@ class Section extends Model
     protected $fillable = [
         'course_id',
         'title',
+        'title_translations',
         'order',
     ];
+
+    protected function casts(): array
+    {
+        return ['title_translations' => 'array'];
+    }
 
     public function course(): BelongsTo
     {

@@ -9,10 +9,12 @@ class SectionResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
         return [
             'id' => $this->id,
             'course_id' => $this->course_id,
-            'title' => $this->title,
+            'title' => $this->title_translations[$locale] ?? $this->title,
+            'translations' => ['title' => $this->title_translations],
             'order' => $this->order,
             'lessons' => LessonResource::collection($this->whenLoaded('lessons')),
             'created_at' => $this->created_at,

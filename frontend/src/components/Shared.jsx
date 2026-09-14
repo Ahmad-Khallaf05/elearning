@@ -21,8 +21,8 @@ export const apiMessage = (error, fallback = 'Something went wrong. Please try a
   if (status === 403) return 'You do not have permission to do that.';
   if (status === 404) return 'We could not find what you were looking for.';
   if (status === 422) return error?.response?.data?.message || 'Please check the highlighted fields.';
-  if (status >= 500) return 'CoursePilot is having trouble reaching the server. Try again shortly.';
-  return error?.response?.data?.message || fallback;
+  if (status >= 500) return `CoursePilot is having trouble reaching the server. Details: ${error?.response?.data?.message || error?.message || fallback}`;
+  return error?.response?.data?.message || error?.message || fallback;
 };
 
 export const formatMoney = (value) => {

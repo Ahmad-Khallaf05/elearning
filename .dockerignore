@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+node_modules
+vendor
+npm-debug.log
+yarn-error.log
+storage/logs/*
+phpunit.xml
+.phpunit.result.cache
+tests
+docker-compose.yml
+Dockerfile
+.dockerignore
+zipFile.zip

@@ -33,4 +33,10 @@ class AdminController extends Controller
             'data' => $course
         ]);
     }
+
+    public function users(Request $request)
+    {
+        $users = \App\Models\User::orderBy('created_at', 'desc')->get();
+        return response()->json(['data' => $users]);
+    }
 }

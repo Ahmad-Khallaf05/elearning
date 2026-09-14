@@ -14,6 +14,7 @@ class CourseResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
         return [
             'id' => $this->id,
             'instructor_id' => $this->instructor_id,
@@ -21,8 +22,9 @@ class CourseResource extends JsonResource
                 'id' => $this->instructor->id,
                 'name' => $this->instructor->name,
             ]),
-            'title' => $this->title,
-            'description' => $this->description,
+            'title' => $this->title_translations[$locale] ?? $this->title,
+            'description' => $this->description_translations[$locale] ?? $this->description,
+            'translations' => ['title' => $this->title_translations, 'description' => $this->description_translations],
             'thumbnail_url' => $this->thumbnail_url,
             'price' => (float) $this->price,
             'approval_status' => $this->approval_status,

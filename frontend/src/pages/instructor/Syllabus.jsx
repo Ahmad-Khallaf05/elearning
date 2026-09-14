@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import axios from '../../services/axios';
 import { 
     ArrowLeft, Plus, ChevronDown, ChevronRight, 
@@ -8,8 +8,6 @@ import {
 
 const Syllabus = () => {
     const { id } = useParams();
-    const navigate = useNavigate();
-    
     const [course, setCourse] = useState(null);
     const [sections, setSections] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -28,17 +26,17 @@ const Syllabus = () => {
     const [lessonForm, setLessonForm] = useState({
         title: '',
         type: 'vod',
+        source_type: 'url',
         video_url: '',
+        website_url: '',
+        video_file: null,
+        document_file: null,
         scheduled_time: '',
         live_session_id: '',
         order: 1
     });
 
-    useEffect(() => {
-        fetchSyllabus();
-    }, [id]);
-
-    const fetchSyllabus = async () => {
+    const fetchSyllabus = useCallback(async () => {
         setIsLoading(true);
         try {
             const response = await axios.get(`/api/courses/${id}`);
@@ -58,7 +56,11 @@ const Syllabus = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        fetchSyllabus();
+    }, [fetchSyllabus]);
 
     const toggleSection = (sectionId) => {
         setExpandedSections(prev => ({
@@ -101,21 +103,49 @@ const Syllabus = () => {
         setError('');
 
         try {
-            const payload = {
-                title: lessonForm.title,
-                type: lessonForm.type,
-                order: lessonForm.order,
-                vod_url: lessonForm.type === 'vod' ? lessonForm.video_url : null,
-                live_metadata: lessonForm.type === 'live' ? {
+            const formData = new FormData();
+            formData.append('title', lessonForm.title);
+            formData.append('type', lessonForm.type);
+            formData.append('source_type', lessonForm.type === 'vod' ? lessonForm.source_type : 'url');
+            formData.append('order', String(lessonForm.order));
+
+            if (lessonForm.type === 'vod') {
+                if (lessonForm.source_type === 'upload') {
+                    if (!lessonForm.video_file) {
+                        setError('Please choose an MP4 file to upload.');
+                        setIsSubmitting(false);
+                        return;
+                    }
+                    formData.append('video_file', lessonForm.video_file);
+                }
+                if (lessonForm.source_type === 'url') {
+                    formData.append('vod_url', lessonForm.video_url);
+                }
+                if (lessonForm.source_type === 'website') {
+                    formData.append('website_url', lessonForm.website_url);
+                }
+                if (lessonForm.source_type === 'file') {
+                    if (!lessonForm.document_file) {
+                        setError('Please choose a PDF, Word, or PowerPoint file to upload.');
+                        setIsSubmitting(false);
+                        return;
+                    }
+                    formData.append('document_file', lessonForm.document_file);
+                }
+            }
+
+            if (lessonForm.type === 'live') {
+                formData.append('live_metadata', JSON.stringify({
                     scheduled_time: lessonForm.scheduled_time,
                     live_session_id: lessonForm.live_session_id
-                } : null
-            };
+                }));
+            }
 
-            const response = await axios.post(`/api/sections/${activeSectionId}/lessons`, payload);
+            const response = await axios.post(`/api/sections/${activeSectionId}/lessons`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             const newLesson = response.data.data || response.data;
             
-            // Update local state
             setSections(sections.map(sec => {
                 if (sec.id === activeSectionId) {
                     return { ...sec, lessons: [...(sec.lessons || []), newLesson] };
@@ -125,7 +155,18 @@ const Syllabus = () => {
             
             setSuccessMessage('Lesson added successfully!');
             setIsLessonModalOpen(false);
-            setLessonForm({ ...lessonForm, title: '', video_url: '', scheduled_time: '', live_session_id: '' });
+            setLessonForm({
+                title: '',
+                type: 'vod',
+                source_type: 'url',
+                video_url: '',
+                website_url: '',
+                video_file: null,
+                document_file: null,
+                scheduled_time: '',
+                live_session_id: '',
+                order: 1
+            });
             setTimeout(() => setSuccessMessage(''), 3000);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to add lesson.');
@@ -222,23 +263,30 @@ const Syllabus = () => {
                                             <p className="text-sm text-gray-500 italic pl-7">No lessons added to this section.</p>
                                         ) : (
                                             <ul className="space-y-2 pl-7">
-                                                {section.lessons.map((lesson, lIndex) => (
-                                                    <li key={lesson.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:border-indigo-100 hover:bg-indigo-50/30 transition-colors">
-                                                        <div className="flex items-center">
-                                                            {String(lesson.type).toLowerCase() === 'live' ? (
-                                                                <Calendar className="w-4 h-4 mr-3 text-emerald-500" />
-                                                            ) : (
-                                                                <PlayCircle className="w-4 h-4 mr-3 text-indigo-500" />
-                                                            )}
-                                                            <span className="text-sm font-medium text-gray-700">
-                                                                {lIndex + 1}. {lesson.title}
+                                                {section.lessons.map((lesson, lIndex) => {
+                                                    const lessonKind = String(lesson?.source_type || '').toLowerCase() === 'file' || lesson?.attachment_url ? 'file' : String(lesson?.source_type || '').toLowerCase() === 'website' ? 'website' : String(lesson?.type || '').toLowerCase() === 'live' ? 'live' : 'video';
+                                                    return (
+                                                        <li key={lesson.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:border-indigo-100 hover:bg-indigo-50/30 transition-colors">
+                                                            <div className="flex items-center">
+                                                                {lessonKind === 'live' ? (
+                                                                    <Calendar className="w-4 h-4 mr-3 text-emerald-500" />
+                                                                ) : lessonKind === 'file' ? (
+                                                                    <List className="w-4 h-4 mr-3 text-amber-500" />
+                                                                ) : lessonKind === 'website' ? (
+                                                                    <Link className="w-4 h-4 mr-3 text-cyan-500" />
+                                                                ) : (
+                                                                    <PlayCircle className="w-4 h-4 mr-3 text-indigo-500" />
+                                                                )}
+                                                                <span className="text-sm font-medium text-gray-700">
+                                                                    {lIndex + 1}. {lesson.title}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                                                                {lessonKind === 'file' ? 'File' : lessonKind === 'website' ? 'Website' : lessonKind === 'live' ? 'Live' : 'Video'}
                                                             </span>
-                                                        </div>
-                                                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
-                                                            {lesson.type}
-                                                        </span>
-                                                    </li>
-                                                ))}
+                                                        </li>
+                                                    );
+                                                })}
                                             </ul>
                                         )}
                                         
@@ -339,18 +387,76 @@ const Syllabus = () => {
                             </div>
 
                              {lessonForm.type === 'vod' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                        <Video className="w-4 h-4 mr-1 text-gray-400" /> Video URL
-                                    </label>
-                                    <input
-                                        type="url"
-                                        required
-                                        value={lessonForm.video_url}
-                                        onChange={(e) => setLessonForm({...lessonForm, video_url: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                                        placeholder="https://vimeo.com/..."
-                                    />
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                            <Video className="w-4 h-4 mr-1 text-gray-400" /> Video source
+                                        </label>
+                                        <select
+                                            value={lessonForm.source_type}
+                                            onChange={(e) => setLessonForm({ ...lessonForm, source_type: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                        >
+                                            <option value="url">Video link</option>
+                                            <option value="upload">Upload MP4</option>
+                                            <option value="website">Website link</option>
+                                            <option value="file">Upload document (PDF, Word, PowerPoint)</option>
+                                        </select>
+                                    </div>
+
+                                    {lessonForm.source_type === 'url' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Video URL</label>
+                                            <input
+                                                type="url"
+                                                required
+                                                value={lessonForm.video_url}
+                                                onChange={(e) => setLessonForm({...lessonForm, video_url: e.target.value})}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                                placeholder="https://www.youtube.com/watch?v=... or https://example.com/video.mp4"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {lessonForm.source_type === 'upload' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Upload MP4 file</label>
+                                            <input
+                                                type="file"
+                                                accept="video/mp4,video/*"
+                                                required
+                                                onChange={(e) => setLessonForm({ ...lessonForm, video_file: e.target.files?.[0] || null })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {lessonForm.source_type === 'website' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+                                            <input
+                                                type="url"
+                                                required
+                                                value={lessonForm.website_url}
+                                                onChange={(e) => setLessonForm({...lessonForm, website_url: e.target.value})}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                                placeholder="https://example.com/tutorial"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {lessonForm.source_type === 'file' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Upload document</label>
+                                            <input
+                                                type="file"
+                                                accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                                                required
+                                                onChange={(e) => setLessonForm({ ...lessonForm, document_file: e.target.files?.[0] || null })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

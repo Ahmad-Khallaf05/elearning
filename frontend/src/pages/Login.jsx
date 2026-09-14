@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { apiMessage, SubmitButton } from '../components/Shared';
 
-const destination = (role) => role === 'student' ? '/student/dashboard' : role === 'instructor' ? '/instructor/dashboard' : role === 'admin' ? '/admin/overview' : '/';
+const destination = (role) => role === 'student' ? '/student/dashboard' : role === 'instructor' ? '/instructor/dashboard' : role === 'admin' ? '/admin/overview' : role === 'parent' ? '/parent/dashboard' : '/';
 
 export default function Login() {
   const { login } = useAuth();

@@ -12,10 +12,17 @@ class Course extends Model
         'instructor_id',
         'title',
         'description',
+        'title_translations',
+        'description_translations',
         'thumbnail_url',
         'price',
         'approval_status',
     ];
+
+    protected function casts(): array
+    {
+        return ['title_translations' => 'array', 'description_translations' => 'array'];
+    }
 
     public function instructor(): BelongsTo
     {

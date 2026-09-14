@@ -11,16 +11,28 @@ class Lesson extends Model
     protected $fillable = [
         'section_id',
         'title',
+        'title_translations',
+        'description_translations',
         'type',
+        'source_type',
         'vod_url',
+        'website_url',
+        'file_path',
+        'attachment_path',
+        'attachment_name',
         'live_metadata',
         'order',
+        'hls_path',
+        'hls_key_path',
+        'processing_status',
     ];
 
     protected function casts(): array
     {
         return [
             'live_metadata' => 'array',
+            'title_translations' => 'array',
+            'description_translations' => 'array',
         ];
     }
 

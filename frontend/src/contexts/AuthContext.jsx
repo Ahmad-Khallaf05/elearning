@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
             const currentUser = response.data?.user || response.data?.data || response.data;
             setUser(currentUser);
             setRole(currentUser?.role);
-        } catch (error) {
+        } catch {
             setUser(null);
             setRole(null);
             localStorage.removeItem('auth_token');

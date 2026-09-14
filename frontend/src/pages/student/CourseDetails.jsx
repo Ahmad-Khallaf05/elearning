@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, ChevronDown, ChevronRight, LockKeyhole, PlayCircle, UserRound } from 'lucide-react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import axios from '../../services/axios';
 import { apiMessage, asArray, EmptyState, ErrorState, formatDate, formatMoney, LoadingState, SubmitButton } from '../../components/Shared';
+import { createCheckout } from '../../services/checkout';
 
 const normalizedType = (lesson) => String(lesson?.type || '').toLowerCase() === 'live' ? 'live' : 'vod';
 
 export default function CourseDetails() {
-  const { id } = useParams(); const navigate = useNavigate(); const [course, setCourse] = useState(null); const [enrolled, setEnrolled] = useState(false); const [open, setOpen] = useState({}); const [loading, setLoading] = useState(true); const [checkout, setCheckout] = useState(false); const [error, setError] = useState('');
-  const load = async () => { setLoading(true); try { const [courseResponse, enrollmentResponse] = await Promise.all([axios.get(`/api/courses/${id}`), axios.get('/api/student/enrollments').catch(() => ({ data: [] }))]); const data = courseResponse.data?.data || courseResponse.data; setCourse(data); const enrollment = asArray(enrollmentResponse.data).some(item => String(item.course_id || item.course?.id || item.id) === String(id)); setEnrolled(Boolean(enrollment)); setOpen(data.sections?.[0]?.id ? { [data.sections[0].id]: true } : {}); setError(''); } catch (err) { setError(apiMessage(err, 'This course is unavailable right now.')); } finally { setLoading(false); } };
-  useEffect(() => { load(); }, [id]);
-  const enroll = async () => { setCheckout(true); setError(''); try { await axios.post('/api/checkout', { course_id: id }); navigate('/student/learn/' + id); } catch (err) { setError(apiMessage(err, 'We could not complete enrollment.')); } finally { setCheckout(false); } };
+  const { id } = useParams(); const [course, setCourse] = useState(null); const [enrolled, setEnrolled] = useState(false); const [open, setOpen] = useState({}); const [loading, setLoading] = useState(true); const [checkout, setCheckout] = useState(false); const [error, setError] = useState('');
+  const load = useCallback(async () => { setLoading(true); try { const [courseResponse, enrollmentResponse] = await Promise.all([axios.get(`/api/courses/${id}`), axios.get('/api/student/enrollments').catch(() => ({ data: [] }))]); const data = courseResponse.data?.data || courseResponse.data; setCourse(data); const enrollment = asArray(enrollmentResponse.data).some(item => String(item.course_id || item.course?.id || item.id) === String(id)); setEnrolled(Boolean(enrollment)); setOpen(data.sections?.[0]?.id ? { [data.sections[0].id]: true } : {}); setError(''); } catch (err) { setError(apiMessage(err, 'This course is unavailable right now.')); } finally { setLoading(false); } }, [id]);
+  useEffect(() => { load(); }, [load]);
+  const enroll = async () => { setCheckout(true); setError(''); try { await createCheckout(id); } catch (err) { setError(apiMessage(err, 'We could not start PayPal checkout.')); } finally { setCheckout(false); } };
   if (loading) return <LoadingState label="Loading course details..." />;
   if (!course) return <div style={{ maxWidth: 700, margin: '0 auto' }}><ErrorState message={error || 'Course not found.'} onRetry={load} /><Link to="/student/catalog" className="btn btn-secondary" style={{ marginTop: 15 }}><ArrowLeft size={16} /> Back to catalog</Link></div>;
   const sections = Array.isArray(course.sections) ? course.sections : [];

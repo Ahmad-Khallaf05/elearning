@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Menu, X, LogOut, ShieldCheck, GraduationCap, LayoutDashboard, BookOpen, Compass, PlusCircle, ClipboardCheck, Users } from 'lucide-react';
+import { Menu, X, LogOut, ShieldCheck, GraduationCap, LayoutDashboard, BookOpen, Compass, PlusCircle, ClipboardCheck, Users, Wallet } from 'lucide-react';
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { initials } from '../components/Shared';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 const configs = {
   student: { label: 'Student workspace', icon: GraduationCap, links: [{ label: 'My learning', to: '/student/dashboard', icon: BookOpen }, { label: 'Browse courses', to: '/student/catalog', icon: Compass }] },
-  instructor: { label: 'Instructor studio', icon: GraduationCap, links: [{ label: 'Dashboard', to: '/instructor/dashboard', icon: LayoutDashboard }, { label: 'My courses', to: '/instructor/courses', icon: BookOpen }, { label: 'Create course', to: '/instructor/courses/create', icon: PlusCircle }] },
-  admin: { label: 'Admin review desk', icon: ShieldCheck, links: [{ label: 'Overview', to: '/admin/overview', icon: LayoutDashboard }, { label: 'Course approvals', to: '/admin/approvals', icon: ClipboardCheck }, { label: 'Users', to: '/admin/users', icon: Users }] },
+  instructor: { label: 'Instructor studio', icon: GraduationCap, links: [{ label: 'Dashboard', to: '/instructor/dashboard', icon: LayoutDashboard }, { label: 'My courses', to: '/instructor/courses', icon: BookOpen }, { label: 'Create course', to: '/instructor/courses/create', icon: PlusCircle }, { label: 'Wallet & Payouts', to: '/instructor/wallet', icon: Wallet }] },
+  admin: { label: 'Admin review desk', icon: ShieldCheck, links: [{ label: 'Overview', to: '/admin/overview', icon: LayoutDashboard }, { label: 'Course approvals', to: '/admin/approvals', icon: ClipboardCheck }, { label: 'Users', to: '/admin/users', icon: Users }, { label: 'Payout Requests', to: '/admin/payouts', icon: Wallet }] },
+  parent: { label: 'Parent dashboard', icon: Users, links: [{ label: 'Children overview', to: '/parent/dashboard', icon: LayoutDashboard }] },
 };
 
 export default function RoleLayout({ role }) {
@@ -17,7 +19,6 @@ export default function RoleLayout({ role }) {
   const config = configs[role];
   if (isLoading) return <div className="app-shell" style={{ display: 'grid', placeItems: 'center' }}><div className="skeleton" style={{ width: 260, height: 84 }} /></div>;
   if (!user || user.role !== role) return <Navigate to="/login" replace />;
-  const Icon = config.icon;
   const signOut = async () => { await logout(); navigate('/login'); };
   return (
     <div className="role-layout">
@@ -37,7 +38,7 @@ export default function RoleLayout({ role }) {
         </div>
       </aside>
       <div className="app-main" style={{ flex: 1, minWidth: 0 }}>
-        <div className="mobile-bar"><div className="role-brand" style={{ padding: 0 }}><span className="brand-mark">C</span> CoursePilot</div><button type="button" className="icon-btn" style={{ color: '#fff', background: 'transparent', border: 0 }} onClick={() => setOpen(!open)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button></div>
+        <div className="mobile-bar"><div className="role-brand" style={{ padding: 0 }}><span className="brand-mark">C</span> CoursePilot</div><div style={{ display: 'flex', gap: 6, alignItems: 'center' }}><LanguageSwitcher /><button type="button" className="icon-btn" style={{ color: '#fff', background: 'transparent', border: 0 }} onClick={() => setOpen(!open)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button></div></div>
         <main className="role-content"><Outlet /></main>
       </div>
     </div>
