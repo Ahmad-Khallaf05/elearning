@@ -7,6 +7,12 @@ RUN npm config set registry https://registry.npmjs.org/ && \
 COPY . .
 RUN npm run build
 
+# Build the React SPA
+WORKDIR /app/frontend
+RUN npm config set registry https://registry.npmjs.org/ && \
+    npm install --legacy-peer-deps --force
+RUN npm run build
+
 # المرحلة 2: تشغيل الباك إند (PHP + Apache)
 FROM php:8.2-apache
 RUN apt-get update && apt-get install -y \
@@ -30,6 +36,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY . /var/www/html
 COPY --from=build-stage /app/public/build /var/www/html/public/build
+COPY --from=build-stage /app/frontend/dist /var/www/html/public
 
 RUN composer install --optimize-autoloader --no-dev --no-scripts
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
