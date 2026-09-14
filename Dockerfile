@@ -1,26 +1,24 @@
 # ==========================================
-# المرحلة 1: بناء الفرونت إند (React / Vite)
+# Stage 1: Build Frontend Assets
 # ==========================================
-FROM node:20-alpine AS build-stage
+FROM node:20-slim AS build-stage
 
 WORKDIR /app
 
-# نسخ ملفات الحزم أولاً لتسريع الكاش
+# Copy package.json and install dependencies
 COPY package*.json ./
+RUN npm install
 
-# التثبيت مع تخطي تعارضات الإصدارات
-RUN npm install --legacy-peer-deps
-
-# نسخ باقي المشروع وعمل البناء
+# Copy the rest of the application and build
 COPY . .
 RUN npm run build
 
 # ==========================================
-# المرحلة 2: تشغيل الباك إند (PHP + Apache)
+# Stage 2: Production PHP + Apache Environment
 # ==========================================
 FROM php:8.2-apache
 
-# تثبيت المتطلبات الضرورية للنظام
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -31,34 +29,35 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# تثبيت ملحقات PHP
+# Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
-# تفعيل mod_rewrite
+# Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# ضبط مسار التشغيل ليشير إلى مجلد public
+# Configure Apache DocumentRoot to point to public/
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf ${APACHE_CONFDIR}/conf-available/*.conf
 
-# جلب Composer
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# نسخ ملفات المشروع
+# Copy application files
 COPY . /var/www/html
 
-# نسخ الملفات التي تم بناؤها من مرحلة React فقط
+# Copy compiled frontend assets from the build stage
 COPY --from=build-stage /app/public/build /var/www/html/public/build
 
-# تثبيت حزم الـ PHP
+# Install PHP dependencies
 RUN composer install --optimize-autoloader --no-dev --no-scripts
 
-# ضبط صلاحيات المجلدات
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Set permissions for storage and bootstrap/cache
+RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache && \
+    chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+CMD sh -c "php artisan migrate --force && apache2-foreground"
