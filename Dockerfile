@@ -19,15 +19,18 @@ RUN npm run build
 # ==========================================
 FROM php:8.2-apache
 
-# تثبيت المتطلبات الضرورية للنظام
+# تثبيت المتطلبات الضرورية وشهادة Aiven
 RUN apt-get update && apt-get install -y \
     git \
     curl \
+    wget \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
     zip \
     unzip \
+    ca-certificates \
+    && wget -O /etc/ssl/certs/aiven-ca.pem https://portal.aiven.io/certs/ca.pem \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # تثبيت ملحقات PHP
