@@ -2,6 +2,20 @@
 
 use Illuminate\Support\Facades\Route;
 
+// 1. المسارات المخصصة والمؤقتة يجب أن تكون في الأعلى
+Route::get('/make-me-admin', function () {
+    // ابحث عن المستخدم عبر إيميله
+    $user = \App\Models\User::where('email', 'a.khallaf905@gmail.com')->first();
+    
+    if ($user) {
+        $user->role = 'admin'; // تأكد أن 'role' هو اسم العمود الصحيح في جدولك
+        $user->save();
+        return 'تمت ترقية الحساب إلى أدمن بنجاح!';
+    }
+    return 'لم يتم العثور على الحساب.';
+});
+
+// 2. المسار الشامل (Catch-all) الخاص بـ React يجب أن يكون في الأسفل دائماً
 Route::get('/{any?}', function () {
     $indexPath = public_path('index.html');
     if (file_exists($indexPath)) {
@@ -9,21 +23,3 @@ Route::get('/{any?}', function () {
     }
     return view('welcome');
 })->where('any', '^(?!api|sanctum|up).*$');
-
-Route::get('/make-me-admin', function () {
-    // ابحث عن المستخدم عبر إيميله
-    $user = \App\Models\User::where('email', 'a.khallaf905@gmail.com')->first();
-    
-    if ($user) {
-        // إذا كنت تستخدم عموداً عادياً في الجدول:
-        $user->role = 'admin'; 
-        // أو $user->is_admin = 1; (حسب تصميمك)
-        
-        // أما إذا كنت تستخدم حزمة Spatie للصلاحيات، استخدم:
-        // $user->assignRole('admin');
-        
-        $user->save();
-        return 'تمت ترقية الحساب إلى أدمن بنجاح!';
-    }
-    return 'لم يتم العثور على الحساب.';
-});
